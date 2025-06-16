@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>عداد مدة مستمرة حتى الكسر</title>
+  <title>عداد المدة المستمرة حتى الكسر</title>
   <style>
     body {
       font-family: Arial;
@@ -78,20 +78,24 @@
     function startCounting() {
       startTime = new Date();
       localStorage.setItem("startTime", startTime.toISOString());
+      localStorage.setItem("isBroken", "false");
       broken = false;
 
       document.getElementById("startDate").textContent = formatTime(startTime);
-
-      // حذف الزر من الواجهة
       const btn = document.getElementById("startBtn");
-      btn.remove();
+      if (btn) btn.remove();
 
-      // وضع زر "تم الكسر" في الخانة الثالثة
       document.getElementById("breakCell").innerHTML = '<button onclick="breakNow()">تم الكسر</button>';
 
-      // بدء العداد
+      runTimer();
+    }
+
+    function runTimer() {
+      if (!startTime || broken) return;
+
+      if (timerInterval) clearInterval(timerInterval);
+
       timerInterval = setInterval(() => {
-        if (broken) return;
         const now = new Date();
         const diffMs = now - startTime;
         const totalSeconds = Math.floor(diffMs / 1000);
@@ -118,25 +122,42 @@
       const minutes = Math.floor((totalSeconds % 3600) / 60);
       const seconds = totalSeconds % 60;
 
-      // وضع تاريخ الكسر مكان زر الكسر
       document.getElementById("breakCell").textContent = formatTime(breakTime);
       document.getElementById("finalDuration").textContent =
         `${days} يوم - ${hours} ساعة - ${minutes} دقيقة - ${seconds} ثانية`;
 
-      // حذف من التخزين المحلي لأنه تم الكسر
-      localStorage.removeItem("startTime");
+      localStorage.setItem("isBroken", "true");
+      localStorage.setItem("breakTime", breakTime.toISOString());
     }
 
-    // استئناف إذا لم يتم الكسر بعد
     window.onload = () => {
       const savedStart = localStorage.getItem("startTime");
+      const isBroken = localStorage.getItem("isBroken") === "true";
+
       if (savedStart) {
         startTime = new Date(savedStart);
+        broken = isBroken;
         document.getElementById("startDate").textContent = formatTime(startTime);
+
         const btn = document.getElementById("startBtn");
         if (btn) btn.remove();
-        document.getElementById("breakCell").innerHTML = '<button onclick="breakNow()">تم الكسر</button>';
-        startCounting();
+
+        if (!broken) {
+          document.getElementById("breakCell").innerHTML = '<button onclick="breakNow()">تم الكسر</button>';
+          runTimer();
+        } else {
+          const breakTime = new Date(localStorage.getItem("breakTime"));
+          const diffMs = breakTime - startTime;
+          const totalSeconds = Math.floor(diffMs / 1000);
+          const days = Math.floor(totalSeconds / (24 * 3600));
+          const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
+          const minutes = Math.floor((totalSeconds % 3600) / 60);
+          const seconds = totalSeconds % 60;
+
+          document.getElementById("breakCell").textContent = formatTime(breakTime);
+          document.getElementById("finalDuration").textContent =
+            `${days} يوم - ${hours} ساعة - ${minutes} دقيقة - ${seconds} ثانية`;
+        }
       }
     };
   </script>
