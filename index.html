@@ -64,6 +64,15 @@
     .break-btn:hover {
       background-color: #c82333;
     }
+
+    .delete-btn {
+      background-color: #6c757d;
+      color: white;
+    }
+
+    .delete-btn:hover {
+      background-color: #5a6268;
+    }
   </style>
 </head>
 <body>
@@ -75,6 +84,7 @@
       <th>المدة المستمرة</th>
       <th>زر الكسر</th>
       <th>المدة النهائية</th>
+      <th>حذف</th>
     </tr>
   </table>
 
@@ -110,7 +120,7 @@
       const table = document.getElementById("timersTable");
       const row = table.insertRow();
       
-      // تاريخ اللحظة
+      // 1. تاريخ اللحظة
       const cell1 = row.insertCell();
       if (timer.start) {
         cell1.textContent = format(timer.start);
@@ -126,7 +136,7 @@
         cell1.appendChild(btn);
       }
 
-      // المدة المستمرة
+      // 2. المدة المستمرة
       const cell2 = row.insertCell();
       if (timer.start && !timer.break) {
         const span = document.createElement("span");
@@ -142,7 +152,7 @@
         cell2.textContent = "—";
       }
 
-      // زر الكسر
+      // 3. زر الكسر
       const cell3 = row.insertCell();
       if (timer.start && !timer.break) {
         const btn = document.createElement("button");
@@ -161,13 +171,28 @@
         cell3.textContent = "—";
       }
 
-      // المدة النهائية
+      // 4. المدة النهائية
       const cell4 = row.insertCell();
       if (timer.start && timer.break) {
         cell4.textContent = diffTime(timer.start, timer.break);
       } else {
         cell4.textContent = "—";
       }
+
+      // 5. زر الحذف
+      const cell5 = row.insertCell();
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "🗑 حذف";
+      delBtn.className = "delete-btn";
+      delBtn.onclick = () => {
+        const confirmDelete = confirm("هل تريد الحذف؟");
+        if (confirmDelete) {
+          timers.splice(index, 1);
+          saveTimers();
+          location.reload();
+        }
+      };
+      cell5.appendChild(delBtn);
     }
 
     function addNewTimer() {
