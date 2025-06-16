@@ -2,164 +2,149 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>عداد المدة المستمرة حتى الكسر</title>
+  <title>عدادات متعددة محفوظة</title>
   <style>
     body {
       font-family: Arial;
-      direction: rtl;
       text-align: center;
-      margin-top: 50px;
+      margin-top: 30px;
+      direction: rtl;
     }
     table {
+      width: 95%;
       margin: auto;
       border-collapse: collapse;
-      width: 95%;
     }
     th, td {
       border: 1px solid #999;
-      padding: 15px;
-      font-size: 16px;
+      padding: 10px;
     }
     button {
-      padding: 7px 15px;
-      font-size: 16px;
-      margin: 5px;
+      padding: 5px 15px;
+      font-size: 14px;
+      cursor: pointer;
     }
-    .flex {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 5px;
-    }
-    #durationDisplay {
-      font-weight: bold;
+    h2 {
+      margin-bottom: 20px;
     }
   </style>
 </head>
 <body>
 
-  <h2>عداد الزمن حتى لحظة الكسر</h2>
-
-  <table>
+  <h2>عدادات الزمن المستمر حتى لحظة الكسر</h2>
+  <table id="timersTable">
     <tr>
       <th>تاريخ اللحظة</th>
-      <th>المدة المستمرة (حيّة)</th>
+      <th>المدة المستمرة</th>
       <th>زر الكسر</th>
       <th>المدة النهائية</th>
-    </tr>
-    <tr>
-      <td id="startCell">
-        <div class="flex" id="startContainer">
-          <div id="startDate">—</div>
-          <button onclick="startCounting()" id="startBtn">تاريخ اللحظة</button>
-        </div>
-      </td>
-      <td id="durationDisplay">—</td>
-      <td id="breakCell">—</td>
-      <td id="finalDuration">—</td>
     </tr>
   </table>
 
   <script>
-    let startTime = null;
-    let timerInterval = null;
-    let broken = false;
+    let timers = JSON.parse(localStorage.getItem("timers")) || [];
 
-    function formatTime(date) {
-      const yyyy = date.getFullYear();
-      const mm = String(date.getMonth() + 1).padStart(2, '0');
-      const dd = String(date.getDate()).padStart(2, '0');
-      const hh = String(date.getHours()).padStart(2, '0');
-      const min = String(date.getMinutes()).padStart(2, '0');
-      const ss = String(date.getSeconds()).padStart(2, '0');
+    function format(date) {
+      const d = new Date(date);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      const ss = String(d.getSeconds()).padStart(2, '0');
       return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
     }
 
-    function startCounting() {
-      startTime = new Date();
-      localStorage.setItem("startTime", startTime.toISOString());
-      localStorage.setItem("isBroken", "false");
-      broken = false;
-
-      document.getElementById("startDate").textContent = formatTime(startTime);
-      const btn = document.getElementById("startBtn");
-      if (btn) btn.remove();
-
-      document.getElementById("breakCell").innerHTML = '<button onclick="breakNow()">تم الكسر</button>';
-
-      runTimer();
+    function diffTime(start, end = new Date()) {
+      const diff = new Date(end) - new Date(start);
+      const totalSec = Math.floor(diff / 1000);
+      const d = Math.floor(totalSec / (24 * 3600));
+      const h = Math.floor((totalSec % (24 * 3600)) / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      return `${d} يوم - ${h} ساعة - ${m} دقيقة - ${s} ثانية`;
     }
 
-    function runTimer() {
-      if (!startTime || broken) return;
-
-      if (timerInterval) clearInterval(timerInterval);
-
-      timerInterval = setInterval(() => {
-        const now = new Date();
-        const diffMs = now - startTime;
-        const totalSeconds = Math.floor(diffMs / 1000);
-        const days = Math.floor(totalSeconds / (24 * 3600));
-        const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-
-        document.getElementById("durationDisplay").textContent =
-          `${days} يوم - ${hours} ساعة - ${minutes} دقيقة - ${seconds} ثانية`;
-      }, 1000);
+    function saveTimers() {
+      localStorage.setItem("timers", JSON.stringify(timers));
     }
 
-    function breakNow() {
-      if (!startTime || broken) return;
-      broken = true;
-      clearInterval(timerInterval);
-
-      const breakTime = new Date();
-      const diffMs = breakTime - startTime;
-      const totalSeconds = Math.floor(diffMs / 1000);
-      const days = Math.floor(totalSeconds / (24 * 3600));
-      const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
-      const minutes = Math.floor((totalSeconds % 3600) / 60);
-      const seconds = totalSeconds % 60;
-
-      document.getElementById("breakCell").textContent = formatTime(breakTime);
-      document.getElementById("finalDuration").textContent =
-        `${days} يوم - ${hours} ساعة - ${minutes} دقيقة - ${seconds} ثانية`;
-
-      localStorage.setItem("isBroken", "true");
-      localStorage.setItem("breakTime", breakTime.toISOString());
-    }
-
-    window.onload = () => {
-      const savedStart = localStorage.getItem("startTime");
-      const isBroken = localStorage.getItem("isBroken") === "true";
-
-      if (savedStart) {
-        startTime = new Date(savedStart);
-        broken = isBroken;
-        document.getElementById("startDate").textContent = formatTime(startTime);
-
-        const btn = document.getElementById("startBtn");
-        if (btn) btn.remove();
-
-        if (!broken) {
-          document.getElementById("breakCell").innerHTML = '<button onclick="breakNow()">تم الكسر</button>';
-          runTimer();
-        } else {
-          const breakTime = new Date(localStorage.getItem("breakTime"));
-          const diffMs = breakTime - startTime;
-          const totalSeconds = Math.floor(diffMs / 1000);
-          const days = Math.floor(totalSeconds / (24 * 3600));
-          const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
-          const minutes = Math.floor((totalSeconds % 3600) / 60);
-          const seconds = totalSeconds % 60;
-
-          document.getElementById("breakCell").textContent = formatTime(breakTime);
-          document.getElementById("finalDuration").textContent =
-            `${days} يوم - ${hours} ساعة - ${minutes} دقيقة - ${seconds} ثانية`;
-        }
+    function addTimerRow(timer, index) {
+      const table = document.getElementById("timersTable");
+      const row = table.insertRow();
+      
+      // تاريخ اللحظة
+      const cell1 = row.insertCell();
+      if (timer.start) {
+        cell1.textContent = format(timer.start);
+      } else {
+        const btn = document.createElement("button");
+        btn.textContent = "تاريخ اللحظة";
+        btn.onclick = () => {
+          timer.start = new Date().toISOString();
+          saveTimers();
+          location.reload(); // إعادة تحميل لإعادة بناء الصف بالحالة الجديدة
+        };
+        cell1.appendChild(btn);
       }
-    };
+
+      // المدة المستمرة
+      const cell2 = row.insertCell();
+      if (timer.start && !timer.break) {
+        const span = document.createElement("span");
+        span.id = "live_" + index;
+        span.textContent = diffTime(timer.start);
+        cell2.appendChild(span);
+        setInterval(() => {
+          span.textContent = diffTime(timer.start);
+        }, 1000);
+      } else if (timer.break) {
+        cell2.textContent = diffTime(timer.start, timer.break);
+      } else {
+        cell2.textContent = "—";
+      }
+
+      // زر الكسر
+      const cell3 = row.insertCell();
+      if (timer.start && !timer.break) {
+        const btn = document.createElement("button");
+        btn.textContent = "تم الكسر";
+        btn.onclick = () => {
+          timer.break = new Date().toISOString();
+          saveTimers();
+          addNewTimer(); // إضافة مؤقت جديد
+          location.reload(); // إعادة تحميل لعرض النتائج
+        };
+        cell3.appendChild(btn);
+      } else if (timer.break) {
+        cell3.textContent = format(timer.break);
+      } else {
+        cell3.textContent = "—";
+      }
+
+      // المدة النهائية
+      const cell4 = row.insertCell();
+      if (timer.start && timer.break) {
+        cell4.textContent = diffTime(timer.start, timer.break);
+      } else {
+        cell4.textContent = "—";
+      }
+    }
+
+    function addNewTimer() {
+      timers.push({}); // إضافة عداد جديد فارغ
+      saveTimers();
+    }
+
+    // عند أول تحميل: أضف مؤقت إن لم يكن هناك أي واحد
+    if (timers.length === 0) {
+      addNewTimer();
+    }
+
+    // بناء الجدول
+    timers.forEach((timer, index) => {
+      addTimerRow(timer, index);
+    });
   </script>
 
 </body>
