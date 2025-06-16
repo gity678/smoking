@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>عدادات متعددة محفوظة</title>
+  <title>عدادات مترابطة</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,12 +11,9 @@
       background-color: #f5f5f5;
       direction: rtl;
     }
-
     h2 {
-      margin-bottom: 20px;
       color: #333;
     }
-
     table {
       width: 95%;
       margin: auto;
@@ -24,60 +21,31 @@
       background-color: #fff;
       box-shadow: 0 0 8px rgba(0,0,0,0.1);
     }
-
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
     th {
       background-color: #e9ecef;
-      color: #333;
-      padding: 12px;
-      border: 1px solid #ccc;
     }
-
-    td {
-      padding: 10px;
-      border: 1px solid #ccc;
-      font-size: 15px;
-    }
-
     button {
       padding: 6px 15px;
-      font-size: 14px;
       border: none;
       border-radius: 5px;
+      font-size: 14px;
       cursor: pointer;
-      transition: background-color 0.3s ease;
     }
-
-    .start-btn {
-      background-color: #28a745;
-      color: white;
-    }
-
-    .start-btn:hover {
-      background-color: #218838;
-    }
-
-    .break-btn {
-      background-color: #dc3545;
-      color: white;
-    }
-
-    .break-btn:hover {
-      background-color: #c82333;
-    }
-
-    .delete-btn {
-      background-color: #6c757d;
-      color: white;
-    }
-
-    .delete-btn:hover {
-      background-color: #5a6268;
-    }
+    .start-btn { background-color: #28a745; color: #fff; }
+    .start-btn:hover { background-color: #218838; }
+    .break-btn { background-color: #dc3545; color: #fff; }
+    .break-btn:hover { background-color: #c82333; }
+    .delete-btn { background-color: #6c757d; color: #fff; }
+    .delete-btn:hover { background-color: #5a6268; }
   </style>
 </head>
 <body>
 
-  <h2>عدادات الزمن المستمر حتى لحظة الكسر</h2>
+  <h2>سلسلة عدادات مترابطة</h2>
   <table id="timersTable">
     <tr>
       <th>تاريخ اللحظة</th>
@@ -90,6 +58,10 @@
 
   <script>
     let timers = JSON.parse(localStorage.getItem("timers")) || [];
+
+    function saveTimers() {
+      localStorage.setItem("timers", JSON.stringify(timers));
+    }
 
     function format(date) {
       const d = new Date(date);
@@ -112,19 +84,22 @@
       return `${d} يوم - ${h} ساعة - ${m} دقيقة - ${s} ثانية`;
     }
 
-    function saveTimers() {
-      localStorage.setItem("timers", JSON.stringify(timers));
+    function addNewTimer(startTime = null) {
+      const newTimer = {};
+      if (startTime) newTimer.start = startTime;
+      timers.push(newTimer);
+      saveTimers();
     }
 
     function addTimerRow(timer, index) {
       const table = document.getElementById("timersTable");
       const row = table.insertRow();
-      
+
       // 1. تاريخ اللحظة
       const cell1 = row.insertCell();
       if (timer.start) {
         cell1.textContent = format(timer.start);
-      } else {
+      } else if (index === 0) {
         const btn = document.createElement("button");
         btn.textContent = "تاريخ اللحظة";
         btn.className = "start-btn";
@@ -134,6 +109,8 @@
           location.reload();
         };
         cell1.appendChild(btn);
+      } else {
+        cell1.textContent = "بانتظار الكسر السابق...";
       }
 
       // 2. المدة المستمرة
@@ -161,7 +138,7 @@
         btn.onclick = () => {
           timer.break = new Date().toISOString();
           saveTimers();
-          addNewTimer();
+          addNewTimer(timer.break); // الجديد يبدأ من هنا
           location.reload();
         };
         cell3.appendChild(btn);
@@ -185,8 +162,7 @@
       delBtn.textContent = "🗑 حذف";
       delBtn.className = "delete-btn";
       delBtn.onclick = () => {
-        const confirmDelete = confirm("هل تريد الحذف؟");
-        if (confirmDelete) {
+        if (confirm("هل تريد الحذف؟")) {
           timers.splice(index, 1);
           saveTimers();
           location.reload();
@@ -195,13 +171,8 @@
       cell5.appendChild(delBtn);
     }
 
-    function addNewTimer() {
-      timers.push({});
-      saveTimers();
-    }
-
     if (timers.length === 0) {
-      addNewTimer();
+      addNewTimer(); // أول مرة فقط
     }
 
     timers.forEach((timer, index) => {
