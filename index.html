@@ -2,56 +2,135 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>حساب المدة الزمنية</title>
+  <title>عداد المدة الزمنية</title>
   <style>
     body {
       font-family: Arial;
+      direction: rtl;
       text-align: center;
       margin-top: 50px;
     }
-    input, button {
-      padding: 10px;
-      margin: 10px;
+    table {
+      margin: auto;
+      border-collapse: collapse;
+      width: 95%;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 15px;
       font-size: 16px;
+    }
+    input {
+      width: 90%;
+      padding: 5px;
+      font-size: 16px;
+    }
+    button {
+      padding: 7px 15px;
+      font-size: 16px;
+      margin: 5px;
+    }
+    .flex {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+    #durationDisplay {
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <h2>أدخل تاريخًا لحساب المدة حتى اليوم</h2>
-  <input type="date" id="inputDate">
-  <br>
-  <button onclick="calculate()">احسب المدة</button>
-  <p id="result"></p>
+
+  <h2>عداد الزمن من لحظة الضغط</h2>
+
+  <table>
+    <tr>
+      <th>تاريخ اللحظة (بالتفصيل)</th>
+      <th>المدة المستمرة (حيّة)</th>
+      <th>تاريخ النهاية</th>
+      <th>المدة النهائية (حتى اليوم)</th>
+    </tr>
+    <tr>
+      <td>
+        <div class="flex">
+          <div id="startDate">—</div>
+          <button onclick="setNow()">تاريخ اللحظة</button>
+        </div>
+      </td>
+      <td id="durationDisplay">—</td>
+      <td id="endDate">—</td>
+      <td id="finalDuration">—</td>
+    </tr>
+  </table>
+
+  <button onclick="calculate()">احسب</button>
 
   <script>
+    let startTime = null;
+    let timerInterval = null;
+
+    function formatTime(date) {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      const hh = String(date.getHours()).padStart(2, '0');
+      const min = String(date.getMinutes()).padStart(2, '0');
+      const ss = String(date.getSeconds()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+    }
+
+    function setNow() {
+      // تحديد لحظة البداية
+      startTime = new Date();
+      document.getElementById("startDate").textContent = formatTime(startTime);
+
+      // إعادة تشغيل المؤقت
+      if (timerInterval) clearInterval(timerInterval);
+
+      timerInterval = setInterval(() => {
+        const now = new Date();
+        const diffMs = now - startTime;
+        const totalSeconds = Math.floor(diffMs / 1000);
+        const days = Math.floor(totalSeconds / (24 * 3600));
+        const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        document.getElementById("durationDisplay").textContent =
+          `${days} يوم - ${hours} ساعة - ${minutes} دقيقة - ${seconds} ثانية`;
+      }, 1000);
+
+      // إعادة ضبط باقي الخانات
+      document.getElementById("endDate").textContent = "—";
+      document.getElementById("finalDuration").textContent = "—";
+    }
+
     function calculate() {
-      const input = document.getElementById("inputDate").value;
-      if (!input) {
-        alert("الرجاء إدخال تاريخ!");
+      if (!startTime) {
+        alert("اضغط على 'تاريخ اللحظة' أولاً.");
         return;
       }
 
-      const inputDate = new Date(input);
-      const today = new Date();
-      
-      let diffTime = today - inputDate;
-      if (diffTime < 0) {
-        document.getElementById("result").textContent = "التاريخ في المستقبل!";
-        return;
-      }
+      const now = new Date();
+      const diffMs = now - startTime;
 
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      // تحديد تاريخ النهاية بإضافة الفرق إلى وقت البداية
+      const endDate = new Date(startTime.getTime() + diffMs);
 
-      // حساب السنوات والشهور تقريبي
-      const years = today.getFullYear() - inputDate.getFullYear();
-      const months = today.getMonth() - inputDate.getMonth();
-      const totalMonths = years * 12 + months;
+      // حساب الفرق بين النهاية واليوم الحالي (عادة سيكون صفر)
+      const finalDiffDays = Math.floor((new Date() - endDate) / (1000 * 60 * 60 * 24));
 
-      document.getElementById("result").innerHTML =
-        `المدة: <br>
-        - عدد الأيام: ${diffDays} يوم<br>
-        - تقريبا: ${Math.floor(totalMonths / 12)} سنة و ${totalMonths % 12} شهر`;
+      document.getElementById("endDate").textContent = formatTime(endDate);
+      document.getElementById("finalDuration").textContent =
+        finalDiffDays === 0
+          ? "اليوم"
+          : finalDiffDays > 0
+            ? `${finalDiffDays} يوم مضى`
+            : `بعد ${Math.abs(finalDiffDays)} يوم`;
     }
   </script>
+
 </body>
 </html>
