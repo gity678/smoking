@@ -187,19 +187,23 @@
       addTimerRow(timer, index);
     });
 
-    // ➕ صف "المجموع" أسفل الجدول
+    // ➕ خانة "المجموع" أسفل عمود الحذف فقط
     const table = document.getElementById("timersTable");
     const totalRow = table.insertRow();
-    const cellLabel = totalRow.insertCell();
-    cellLabel.colSpan = 4;
-    cellLabel.style.textAlign = "center";
-    cellLabel.style.fontWeight = "bold";
-    cellLabel.textContent = "المجموع";
 
-    const cellCount = totalRow.insertCell();
-    cellCount.style.fontWeight = "bold";
-    const completedCount = timers.filter(t => t.break).length;
-    cellCount.textContent = completedCount;
+    for (let i = 0; i < 4; i++) {
+      const emptyCell = totalRow.insertCell();
+      emptyCell.style.border = "none";
+    }
+
+    const countCell = totalRow.insertCell();
+    countCell.style.fontWeight = "bold";
+    countCell.style.textAlign = "center";
+    countCell.style.backgroundColor = "#d4edda"; // أخضر فاتح
+    countCell.style.color = "#155724"; // أخضر غامق للنص
+    countCell.style.borderTop = "2px solid #28a745";
+    countCell.style.borderBottom = "2px solid #28a745";
+    countCell.textContent = "المجموع: " + timers.filter(t => t.break).length;
   </script>
 
 </body>
