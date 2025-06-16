@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>حساب المدة الزمنية</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      margin-top: 50px;
+    }
+    input, button {
+      padding: 10px;
+      margin: 10px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h2>أدخل تاريخًا لحساب المدة حتى اليوم</h2>
+  <input type="date" id="inputDate">
+  <br>
+  <button onclick="calculate()">احسب المدة</button>
+  <p id="result"></p>
+
+  <script>
+    function calculate() {
+      const input = document.getElementById("inputDate").value;
+      if (!input) {
+        alert("الرجاء إدخال تاريخ!");
+        return;
+      }
+
+      const inputDate = new Date(input);
+      const today = new Date();
+      
+      let diffTime = today - inputDate;
+      if (diffTime < 0) {
+        document.getElementById("result").textContent = "التاريخ في المستقبل!";
+        return;
+      }
+
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      // حساب السنوات والشهور تقريبي
+      const years = today.getFullYear() - inputDate.getFullYear();
+      const months = today.getMonth() - inputDate.getMonth();
+      const totalMonths = years * 12 + months;
+
+      document.getElementById("result").innerHTML =
+        `المدة: <br>
+        - عدد الأيام: ${diffDays} يوم<br>
+        - تقريبا: ${Math.floor(totalMonths / 12)} سنة و ${totalMonths % 12} شهر`;
+    }
+  </script>
+</body>
+</html>
