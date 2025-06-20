@@ -1,23 +1,82 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>أهلاً بك</title>
+  <meta charset="UTF-8" />
+  <title>صفحة الدخول</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      height: 100vh;
+      justify-content: center;
+      align-items: center;
+      margin: 0;
+      direction: rtl;
+    }
+    .container {
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      text-align: center;
+      width: 320px;
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+    input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 18px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      font-size: 18px;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .error {
+      color: red;
+      margin-top: 10px;
+      min-height: 20px;
+    }
+  </style>
 </head>
-<body style="text-align:center; font-family:Arial; padding:50px;">
-  <h2>مرحباً بك في تطبيق العدادات</h2>
-  <p>أدخل كود الدخول:</p>
-  <input id="codeInput" placeholder="مثال: m123t">
-  <br><br>
-  <button onclick="proceed()">دخول</button>
+<body>
+  <div class="container">
+    <h1>مرحباً بك</h1>
+    <p>الرجاء إدخال الكود للدخول:</p>
+    <input type="password" id="codeInput" placeholder="أدخل الكود هنا" />
+    <button onclick="checkCode()">دخول</button>
+    <div class="error" id="errorMsg"></div>
+  </div>
 
   <script>
-    function proceed() {
+    function checkCode() {
       const code = document.getElementById('codeInput').value.trim();
-      if (!code) return alert("الرجاء إدخال الكود");
-      // حفظ في localStorage والانتقال
-      localStorage.setItem("access_code", code);
-      location.href = "check.html";
+      const errorMsg = document.getElementById('errorMsg');
+      const correctCode = "m123t";  // الكود الصحيح
+      
+      if (code === correctCode) {
+        // توجيه للصفحة الثانية
+        window.location.href = "data.html"; 
+      } else {
+        errorMsg.textContent = "الكود غير صحيح، حاول مرة أخرى.";
+      }
     }
   </script>
 </body>
