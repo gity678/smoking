@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>عداد Supabase - مثال جاهز</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body style="font-family: Arial, sans-serif; text-align:center; padding:20px;">
+  <h1>عداد Supabase</h1>
+  <button onclick="startTimer()">تاريخ اللحظة (ابدأ)</button>
+  <button onclick="stopTimer()">تم الكسر (توقف)</button>
+  <div id="status" style="margin-top: 20px;"></div>
+
+  <script>
+    const supabaseUrl = 'https://kqkuurzqkimpcfpfbipt.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtxa3V1cnpxa2ltcGNmcGZiaXB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MzMyNzEsImV4cCI6MjA2NjAwOTI3MX0.WgBqh1AyBGLjNzzYAy6zKtD1o7M2AwBQRQeTz7OArZ4';
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    const user_code = "m123t";
+
+    let startTime = null;
+
+    function startTimer() {
+      startTime = new Date();
+      document.getElementById('status').innerText = `بدأت عند: ${startTime.toLocaleString()}`;
+    }
+
+    async function stopTimer() {
+      if (!startTime) {
+        alert('يرجى الضغط على "تاريخ اللحظة" أولاً!');
+        return;
+      }
+      const endTime = new Date();
+
+      const { data, error } = await supabase
+        .from('timers')
+        .insert([
+          {
+            user_code,
+            title: 'عداد جديد',
+            start_time: startTime.toISOString(),
+            end_time: endTime.toISOString(),
+          },
+        ]);
+
+      if (error) {
+        document.getElementById('status').innerText = `حدث خطأ: ${error.message}`;
+      } else {
+        document.getElementById('status').innerText = `تم حفظ العداد!`;
+      }
+    }
+  </script>
+</body>
+</html>
