@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>صفحة البيانات</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      padding: 20px;
+      direction: rtl;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+    input[type="text"], input[type="date"], input[type="number"] {
+      width: 90%;
+      padding: 5px;
+      box-sizing: border-box;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
+    button {
+      background-color: #007bff;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .delete-btn {
+      background-color: #dc3545;
+    }
+    .delete-btn:hover {
+      background-color: #a71d2a;
+    }
+    .add-row {
+      margin-top: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>صفحة البيانات</h1>
+
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>تاريخ البدء</th>
+        <th>المدة المستمرة (بالثواني)</th>
+        <th>تاريخ التوقف</th>
+        <th>المدة النهائية (بالثواني)</th>
+        <th>الحذف</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- الصفوف الجديدة ستضاف هنا -->
+    </tbody>
+  </table>
+
+  <div class="add-row">
+    <input type="date" id="startDate" placeholder="تاريخ البدء" />
+    <input type="number" id="duration" placeholder="المدة المستمرة (بالثواني)" min="0" />
+    <input type="date" id="stopDate" placeholder="تاريخ التوقف" />
+    <input type="number" id="finalDuration" placeholder="المدة النهائية (بالثواني)" min="0" />
+    <button onclick="addRow()">إضافة صف</button>
+  </div>
+
+  <script>
+    function addRow() {
+      const startDate = document.getElementById('startDate').value;
+      const duration = document.getElementById('duration').value;
+      const stopDate = document.getElementById('stopDate').value;
+      const finalDuration = document.getElementById('finalDuration').value;
+
+      if (!startDate || !duration || !stopDate || !finalDuration) {
+        alert('يرجى تعبئة جميع الحقول');
+        return;
+      }
+
+      const tbody = document.getElementById('dataTable').querySelector('tbody');
+      const tr = document.createElement('tr');
+
+      tr.innerHTML = `
+        <td>${startDate}</td>
+        <td>${duration}</td>
+        <td>${stopDate}</td>
+        <td>${finalDuration}</td>
+        <td><button class="delete-btn" onclick="deleteRow(this)">حذف</button></td>
+      `;
+
+      tbody.appendChild(tr);
+
+      // تفريغ الحقول بعد الإضافة
+      document.getElementById('startDate').value = '';
+      document.getElementById('duration').value = '';
+      document.getElementById('stopDate').value = '';
+      document.getElementById('finalDuration').value = '';
+    }
+
+    function deleteRow(btn) {
+      const row = btn.parentNode.parentNode;
+      row.parentNode.removeChild(row);
+    }
+  </script>
+
+</body>
+</html>
