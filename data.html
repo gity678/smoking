@@ -61,18 +61,16 @@
     </tr>
   </thead>
   <tbody id="dataBody">
-    <!-- البيانات من Supabase ستُعرض هنا -->
+    <!-- سيتم إدخال الصفوف هنا -->
   </tbody>
 </table>
 
 <script>
-  // إعداد Supabase
   const SUPABASE_URL = 'https://gdgnbvkzqujzflcyzqpi.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkZ25idm...'; // المفتاح الكامل الخاص بك
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkZ25idm...'; // المفتاح الكامل
   const TABLE = 'timers';
   const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // دالة تنسيق الوقت
   function formatDateTime(date) {
     return date.getFullYear() + '-' +
       String(date.getMonth()+1).padStart(2,'0') + '-' +
@@ -108,16 +106,12 @@
     `;
     tbody.appendChild(tr);
 
-    // زر الحذف
     tr.querySelector('.delete-btn').onclick = () => {
       clearInterval(currentInterval);
       tr.remove();
     };
 
-    // إن لم تكن البيانات من supabase، نبدأ صف جديد بعد الكسر
-    if (!fromSupabase) {
-      createNewTimerRow();
-    }
+    if (!fromSupabase) createNewTimerRow();
   }
 
   function createNewTimerRow() {
@@ -161,7 +155,6 @@
       const seconds = Math.floor((stopTime - currentStartTime) / 1000);
       finalDurationEl.textContent = formatDuration(seconds);
 
-      // حفظ البيانات في Supabase
       await supabase.from(TABLE).insert([{
         start_time: startTimeEl.textContent,
         duration: durationEl.textContent,
@@ -176,26 +169,25 @@
         finalDurationEl.textContent
       );
 
-      tr.remove(); // إزالة صف التحكم
+      tr.remove(); // حذف صف البداية
     };
 
-    // زر الحذف
     tr.querySelector('.delete-btn').onclick = () => {
       clearInterval(currentInterval);
       tr.remove();
     };
   }
 
-  // تحميل البيانات من Supabase عند فتح الصفحة
+  // عند تحميل الصفحة
   window.onload = async () => {
-    const { data, error } = await supabase.from(TABLE).select('*').order('id', { ascending: true });
-    if (data) {
+    const { data } = await supabase.from(TABLE).select('*').order('id', { ascending: true });
+    if (data && data.length > 0) {
       data.forEach(row => {
         addRow(row.start_time, row.duration, row.stop_time, row.final_duration, true);
       });
     }
 
-    // إنشاء أول صف للتشغيل
+    // ✅ دائماً أضف صف جديد في النهاية
     createNewTimerRow();
   };
 </script>
