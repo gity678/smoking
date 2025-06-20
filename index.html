@@ -60,7 +60,24 @@
   </table>
 
   <script>
-    let timers = JSON.parse(localStorage.getItem("timers")) || [];
+    let timers = [];
+    const code = "m123t";
+
+    async function loadTimersFromGitHub() {
+      try {
+        const response = await fetch(`https://raw.githubusercontent.com/gity678/<repo-name>/main/timers-backup/${code}.json`);
+        if (response.ok) {
+          timers = await response.json();
+        } else {
+          timers = [];
+        }
+        init();
+      } catch (err) {
+        console.error("فشل تحميل البيانات من GitHub:", err);
+        timers = [];
+        init();
+      }
+    }
 
     function saveTimers() {
       localStorage.setItem("timers", JSON.stringify(timers));
@@ -177,36 +194,36 @@
       cell5.appendChild(delBtn);
     }
 
-    if (timers.length === 0) {
-      addNewTimer();
+    function init() {
+      if (timers.length === 0) {
+        addNewTimer();
+      }
+      timers.forEach((timer, index) => {
+        addTimerRow(timer, index);
+      });
+
+      const table = document.getElementById("timersTable");
+      const totalRow = table.insertRow();
+      for (let i = 0; i < 4; i++) {
+        const emptyCell = totalRow.insertCell();
+        emptyCell.style.border = "none";
+      }
+      const countCell = totalRow.insertCell();
+      countCell.style.fontWeight = "bold";
+      countCell.style.textAlign = "center";
+      countCell.style.backgroundColor = "#d4edda";
+      countCell.style.color = "#155724";
+      countCell.style.borderTop = "2px solid #28a745";
+      countCell.style.borderBottom = "2px solid #28a745";
+      countCell.textContent = "المجموع: " + timers.filter(t => t.break).length;
     }
-
-    timers.forEach((timer, index) => {
-      addTimerRow(timer, index);
-    });
-
-    const table = document.getElementById("timersTable");
-    const totalRow = table.insertRow();
-
-    for (let i = 0; i < 4; i++) {
-      const emptyCell = totalRow.insertCell();
-      emptyCell.style.border = "none";
-    }
-
-    const countCell = totalRow.insertCell();
-    countCell.style.fontWeight = "bold";
-    countCell.style.textAlign = "center";
-    countCell.style.backgroundColor = "#d4edda";
-    countCell.style.color = "#155724";
-    countCell.style.borderTop = "2px solid #28a745";
-    countCell.style.borderBottom = "2px solid #28a745";
-    countCell.textContent = "المجموع: " + timers.filter(t => t.break).length;
 
     function autoBackupToGitHub() {
       fetch("https://eoa5enn99ure240.m.pipedream.net", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          filename: `${code}.json`,
           content: timers
         })
       }).then(res => {
@@ -217,6 +234,8 @@
         }
       });
     }
+
+    loadTimersFromGitHub();
   </script>
 </body>
 </html>
