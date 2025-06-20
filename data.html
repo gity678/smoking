@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <title>صفحة البيانات</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="supabase-client.js"></script> <!-- ربط ملف الجلب -->
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -12,12 +14,11 @@
     }
     h1 {
       text-align: center;
-      color: #333;
     }
     table {
       width: 100%;
-      border-collapse: collapse;
       margin-top: 20px;
+      border-collapse: collapse;
       background: #fff;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
@@ -25,206 +26,53 @@
       border: 1px solid #ccc;
       padding: 10px;
       text-align: center;
-      vertical-align: middle;
-      white-space: nowrap;
     }
     th {
       background-color: #007bff;
       color: white;
     }
-    button {
-      background-color: #007bff;
-      border: none;
-      color: white;
-      padding: 6px 12px;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-      font-size: 14px;
-    }
-    button:hover:not(:disabled) {
-      background-color: #0056b3;
-    }
-    button:disabled {
-      background-color: #999;
-      cursor: not-allowed;
-    }
-    .delete-btn {
-      background-color: #dc3545;
-    }
-    .delete-btn:hover {
-      background-color: #a71d2a;
-    }
   </style>
 </head>
 <body>
 
-  <h1>صفحة البيانات</h1>
+<h1>بيانات العدادات</h1>
+<table>
+  <thead>
+    <tr>
+      <th>تاريخ البدء</th>
+      <th>المدة المستمرة</th>
+      <th>تاريخ التوقف</th>
+      <th>المدة النهائية</th>
+    </tr>
+  </thead>
+  <tbody id="dataBody">
+    <!-- سيتم ملء البيانات هنا -->
+  </tbody>
+</table>
 
-  <table id="dataTable">
-    <thead>
-      <tr>
-        <th>تاريخ البدء</th>
-        <th>المدة المستمرة</th>
-        <th>تاريخ التوقف</th>
-        <th>المدة النهائية</th>
-        <th>الحذف</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- سيبدأ الصف الأول تلقائياً -->
-    </tbody>
-  </table>
+<script>
+  // تحميل البيانات من Supabase عند فتح الصفحة
+  document.addEventListener('DOMContentLoaded', async () => {
+    const data = await fetchDataFromSupabase();
+    const tbody = document.getElementById('dataBody');
 
-  <script>
-    function formatDateTime(date) {
-      return date.getFullYear() + '-' +
-        String(date.getMonth()+1).padStart(2,'0') + '-' +
-        String(date.getDate()).padStart(2,'0') + ' ' +
-        String(date.getHours()).padStart(2,'0') + ':' +
-        String(date.getMinutes()).padStart(2,'0') + ':' +
-        String(date.getSeconds()).padStart(2,'0');
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4">لا توجد بيانات</td></tr>';
+      return;
     }
 
-    // لتحويل عدد الثواني إلى أيام وساعات ودقائق وثواني
-    function formatDuration(seconds) {
-      const days = Math.floor(seconds / 86400);
-      seconds %= 86400;
-      const hours = Math.floor(seconds / 3600);
-      seconds %= 3600;
-      const minutes = Math.floor(seconds / 60);
-      seconds %= 60;
-      return `${days} يوم ${hours} ساعة ${minutes} دقيقة ${seconds} ثانية`;
-    }
-
-    // عدادات لكل صف: نستخدم Map للاحتفاظ بها حسب الصف
-    const intervals = new Map();
-
-    // إنشاء صف جديد
-    // isFirstRow: هل الصف الأول (يحتوي زر بدء)
-    // مع إمكانية البدء التلقائي (autoStart) للصفوف التالية
-    function createRow(isFirstRow = false, startDateText = '', duration = '0 يوم 0 ساعة 0 دقيقة 0 ثانية', stopDateText = '', finalDuration = '0 يوم 0 ساعة 0 دقيقة 0 ثانية', autoStart = false) {
-      const tbody = document.getElementById('dataTable').querySelector('tbody');
+    data.forEach(item => {
       const tr = document.createElement('tr');
-
-      if (isFirstRow) {
-        tr.innerHTML = `
-          <td><button class="start-btn">تاريخ البداية</button><br><span class="start-time">${startDateText}</span></td>
-          <td><span class="duration">${duration}</span></td>
-          <td><button class="stop-btn" disabled>تم الكسر</button><br><span class="stop-time">${stopDateText}</span></td>
-          <td><span class="final-duration">${finalDuration}</span></td>
-          <td><button class="delete-btn">حذف</button></td>
-        `;
-        tbody.appendChild(tr);
-
-        const startBtn = tr.querySelector('.start-btn');
-        const stopBtn = tr.querySelector('.stop-btn');
-        const deleteBtn = tr.querySelector('.delete-btn');
-
-        let startTime = null;
-        let intervalId = null;
-
-        startBtn.addEventListener('click', () => {
-          if (startTime) return;
-          startTime = new Date();
-          tr.querySelector('.start-time').textContent = formatDateTime(startTime);
-          startBtn.disabled = true;
-          stopBtn.disabled = false;
-
-          intervalId = setInterval(() => {
-            const now = new Date();
-            const secondsPassed = Math.floor((now - startTime) / 1000);
-            tr.querySelector('.duration').textContent = formatDuration(secondsPassed);
-          }, 1000);
-
-          intervals.set(tr, intervalId);
-        });
-
-        stopBtn.addEventListener('click', () => {
-          if (!startTime) return;
-          const stopTime = new Date();
-          tr.querySelector('.stop-time').textContent = formatDateTime(stopTime);
-          stopBtn.disabled = true;
-
-          clearInterval(intervalId);
-          intervals.delete(tr);
-
-          const finalSec = Math.floor((stopTime - startTime) / 1000);
-          tr.querySelector('.final-duration').textContent = formatDuration(finalSec);
-
-          // إنشاء صف جديد يبدأ العد تلقائياً
-          createRow(false, formatDateTime(stopTime), '0 يوم 0 ساعة 0 دقيقة 0 ثانية', '', '', true);
-        });
-
-        deleteBtn.addEventListener('click', () => {
-          clearInterval(intervalId);
-          intervals.delete(tr);
-          tr.remove();
-
-          // إذا حذفنا الصف الأول (زر البداية)، نعيد إنشاء صف أول جديد
-          if (isFirstRow) {
-            createRow(true);
-          }
-        });
-
-      } else {
-        // صف لاحق بدون زر بداية، يبدأ العد تلقائياً إذا autoStart = true
-        tr.innerHTML = `
-          <td><span class="start-time">${startDateText}</span></td>
-          <td><span class="duration">${duration}</span></td>
-          <td><button class="stop-btn" disabled>تم الكسر</button><br><span class="stop-time">${stopDateText}</span></td>
-          <td><span class="final-duration">${finalDuration}</span></td>
-          <td><button class="delete-btn">حذف</button></td>
-        `;
-        tbody.appendChild(tr);
-
-        const stopBtn = tr.querySelector('.stop-btn');
-        const deleteBtn = tr.querySelector('.delete-btn');
-
-        let startTime = null;
-        let intervalId = null;
-
-        if (autoStart) {
-          startTime = new Date();
-          tr.querySelector('.start-time').textContent = startDateText || formatDateTime(startTime);
-          stopBtn.disabled = false;
-
-          intervalId = setInterval(() => {
-            const now = new Date();
-            const secondsPassed = Math.floor((now - startTime) / 1000);
-            tr.querySelector('.duration').textContent = formatDuration(secondsPassed);
-          }, 1000);
-
-          intervals.set(tr, intervalId);
-        }
-
-        stopBtn.addEventListener('click', () => {
-          if (!startTime) return;
-          const stopTime = new Date();
-          tr.querySelector('.stop-time').textContent = formatDateTime(stopTime);
-          stopBtn.disabled = true;
-
-          clearInterval(intervalId);
-          intervals.delete(tr);
-
-          const finalSec = Math.floor((stopTime - startTime) / 1000);
-          tr.querySelector('.final-duration').textContent = formatDuration(finalSec);
-
-          // إنشاء صف جديد يبدأ العد تلقائياً
-          createRow(false, formatDateTime(stopTime), '0 يوم 0 ساعة 0 دقيقة 0 ثانية', '', '', true);
-        });
-
-        deleteBtn.addEventListener('click', () => {
-          clearInterval(intervalId);
-          intervals.delete(tr);
-          tr.remove();
-        });
-      }
-    }
-
-    // إنشاء الصف الأول عند تحميل الصفحة
-    createRow(true);
-  </script>
+      tr.innerHTML = `
+        <td>${item.start_time || ''}</td>
+        <td>${item.duration || ''}</td>
+        <td>${item.stop_time || ''}</td>
+        <td>${item.final_duration || ''}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+</script>
 
 </body>
 </html>
