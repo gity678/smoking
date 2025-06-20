@@ -1,1 +1,68 @@
 
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>صفحة الترحيب</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      direction: rtl;
+      padding: 2rem;
+    }
+    form {
+      background-color: #fff;
+      max-width: 320px;
+      margin: 100px auto;
+      padding: 20px 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+      text-align: center;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #2e86de;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #1b4f72;
+    }
+  </style>
+</head>
+<body>
+  <form id="loginForm">
+    <h2>أدخل كود الدخول</h2>
+    <input type="text" id="accessCode" placeholder="الكود هنا" required />
+    <button type="submit">دخول</button>
+  </form>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const code = document.getElementById('accessCode').value.trim();
+      const correctCode = "m123t"; // الكود الصحيح
+      
+      if (code === correctCode) {
+        // عند الكود الصحيح توجه إلى الصفحة الثانية
+        window.location.href = "data.html"; // غير هذا إلى رابط الصفحة الثانية لديك
+      } else {
+        alert("الكود غير صحيح، حاول مرة أخرى.");
+      }
+    });
+  </script>
+</body>
+</html>
