@@ -1,87 +1,29 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8" />
-  <title>مرحبًا بك</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #eef2f7;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .container {
-      background: white;
-      padding: 30px 40px;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
-      text-align: center;
-      width: 300px;
-    }
-    input[type="password"] {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      margin: 15px 0;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      padding: 10px 0;
-      width: 100%;
-      border: none;
-      border-radius: 6px;
-      font-size: 18px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    .error {
-      color: #dc3545;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    h2 {
-      margin-bottom: 0;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>أدخل الكود للمتابعة</h2>
-    <input type="password" id="codeInput" placeholder="أدخل الكود هنا" autofocus />
-    <button onclick="checkCode()">دخول</button>
-    <div id="errorMsg" class="error" style="display:none;">الكود غير صحيح، حاول مرة أخرى.</div>
-  </div>
+from flask import Flask, render_template, request, redirect, url_for
 
-  <script>
-    const correctCode = "m123t";
+app = Flask(__name__)
 
-    function checkCode() {
-      const input = document.getElementById("codeInput").value.trim();
-      const errorDiv = document.getElementById("errorMsg");
+# الكود السري المطلوب للدخول
+ACCESS_CODE = "m123t"
 
-      if (input === correctCode) {
-        // الكود صحيح - تحويل إلى صفحة العدادات الزمنية
-        window.location.href = "timers.html"; // عدل اسم الملف حسب صفحتك
-      } else {
-        // الكود خاطئ - اظهار رسالة خطأ
-        errorDiv.style.display = "block";
-      }
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    error = None
+    if request.method == 'POST':
+        code = request.form.get('code')
+        if code == ACCESS_CODE:
+            return redirect(url_for('data'))
+        else:
+            error = "الكود غير صحيح، حاول مرة أخرى."
+    return render_template('index.html', error=error)
+
+@app.route('/data')
+def data():
+    # هنا تضع البيانات التي تريد عرضها
+    sample_data = {
+        "message": "مرحباً بك في صفحة البيانات!",
+        "info": "يمكنك هنا إضافة أي محتوى تريده."
     }
+    return render_template('data.html', data=sample_data)
 
-    // اختياري: اضغط Enter لتنفيذ التحقق
-    document.getElementById("codeInput").addEventListener("keyup", function(event) {
-      if (event.key === "Enter") {
-        checkCode();
-      }
-    });
-  </script>
-</body>
-</html>
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=5000)
