@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>صفحة البيانات</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="supabaseFunctions.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -60,17 +61,10 @@
       <th>الحذف</th>
     </tr>
   </thead>
-  <tbody id="dataBody">
-    <!-- سيتم عرض الصفوف هنا -->
-  </tbody>
+  <tbody id="dataBody"></tbody>
 </table>
 
 <script>
-  const SUPABASE_URL = 'https://gdgnbvkzqujzflcyzqpi.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkZ25idm...'; // المفتاح الكامل
-  const TABLE = 'timers';
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
   function formatDateTime(date) {
     return date.getFullYear() + '-' +
       String(date.getMonth()+1).padStart(2,'0') + '-' +
@@ -152,12 +146,12 @@
       const seconds = Math.floor((stopTime - currentStartTime) / 1000);
       finalDurationEl.textContent = formatDuration(seconds);
 
-      await supabase.from(TABLE).insert([{
+      await saveRowToSupabase({
         start_time: startTimeEl.textContent,
         duration: durationEl.textContent,
         stop_time: stopTimeEl.textContent,
         final_duration: finalDurationEl.textContent
-      }]);
+      });
 
       addRow(
         startTimeEl.textContent,
@@ -166,7 +160,7 @@
         finalDurationEl.textContent
       );
 
-      tr.remove(); // إزالة صف الزر بعد حفظه
+      tr.remove();
     };
 
     tr.querySelector('.delete-btn').onclick = () => {
@@ -175,24 +169,17 @@
     };
   }
 
-  // تحميل البيانات من Supabase ثم إضافة زر "تاريخ البداية"
+  // تحميل البيانات ثم إضافة صف جديد
   window.onload = async () => {
-    try {
-      const { data } = await supabase.from(TABLE).select('*').order('id', { ascending: true });
-      if (data) {
-        data.forEach(row => {
-          addRow(row.start_time, row.duration, row.stop_time, row.final_duration, true);
-        });
-      }
-    } catch (err) {
-      console.error('خطأ في جلب البيانات:', err.message);
+    const data = await loadDataFromSupabase();
+    if (data && data.length > 0) {
+      data.forEach(row => {
+        addRow(row.start_time, row.duration, row.stop_time, row.final_duration, true);
+      });
     }
-
-    // ✅ مهما كان، أضف دائماً صف جديد للبدء
     createNewTimerRow();
   };
 </script>
 
 </body>
 </html>
-
