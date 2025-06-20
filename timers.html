@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>عدادات زمنية</title>
   <style>
     body {
@@ -30,6 +30,7 @@
       padding: 5px 10px;
       border: none;
       border-radius: 4px;
+      cursor: pointer;
     }
     .break-btn {
       background-color: #dc3545;
@@ -37,6 +38,7 @@
       padding: 5px 10px;
       border: none;
       border-radius: 4px;
+      cursor: pointer;
     }
     .delete-btn {
       background-color: #ffc107;
@@ -44,6 +46,7 @@
       padding: 5px 10px;
       border: none;
       border-radius: 4px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -69,19 +72,22 @@
         if (response.ok) {
           timers = await response.json();
         } else {
-          timers = [];
+          timers = JSON.parse(localStorage.getItem("timers")) || [];
         }
-        init();
       } catch (err) {
         console.error("فشل تحميل البيانات من GitHub:", err);
-        timers = [];
-        init();
+        timers = JSON.parse(localStorage.getItem("timers")) || [];
       }
+      if (timers.length === 0) {
+        addNewTimer();
+      }
+      rebuildTable();
     }
 
     function saveTimers() {
       localStorage.setItem("timers", JSON.stringify(timers));
       autoBackupToGitHub();
+      rebuildTable();
     }
 
     function format(date) {
@@ -97,6 +103,7 @@
 
     function diffTime(start, end = new Date()) {
       const diff = new Date(end) - new Date(start);
+      if (diff < 0) return "—";
       const totalSec = Math.floor(diff / 1000);
       const d = Math.floor(totalSec / (24 * 3600));
       const h = Math.floor((totalSec % (24 * 3600)) / 3600);
@@ -116,6 +123,7 @@
       const table = document.getElementById("timersTable");
       const row = table.insertRow();
 
+      // تاريخ البداية
       const cell1 = row.insertCell();
       if (timer.start) {
         cell1.textContent = format(timer.start);
@@ -126,7 +134,6 @@
         btn.onclick = () => {
           timer.start = new Date().toISOString();
           saveTimers();
-          location.reload();
         };
         cell1.appendChild(btn);
       } else {
@@ -134,12 +141,12 @@
         if (previous?.break) {
           timer.start = previous.break;
           saveTimers();
-          location.reload();
         } else {
           cell1.textContent = "بانتظار الكسر السابق...";
         }
       }
 
+      // المدة المستمرة
       const cell2 = row.insertCell();
       if (timer.start && !timer.break) {
         const span = document.createElement("span");
@@ -155,6 +162,7 @@
         cell2.textContent = "—";
       }
 
+      // تاريخ النهاية / زر كسر
       const cell3 = row.insertCell();
       if (timer.start && !timer.break) {
         const btn = document.createElement("button");
@@ -164,7 +172,6 @@
           timer.break = new Date().toISOString();
           saveTimers();
           addNewTimer(timer.break);
-          location.reload();
         };
         cell3.appendChild(btn);
       } else if (timer.break) {
@@ -173,6 +180,7 @@
         cell3.textContent = "—";
       }
 
+      // المدة النهائية
       const cell4 = row.insertCell();
       if (timer.start && timer.break) {
         cell4.textContent = diffTime(timer.start, timer.break);
@@ -180,6 +188,7 @@
         cell4.textContent = "—";
       }
 
+      // حذف
       const cell5 = row.insertCell();
       const delBtn = document.createElement("button");
       delBtn.textContent = "🗑 حذف";
@@ -188,21 +197,22 @@
         if (confirm("هل تريد الحذف؟")) {
           timers.splice(index, 1);
           saveTimers();
-          location.reload();
         }
       };
       cell5.appendChild(delBtn);
     }
 
-    function init() {
-      if (timers.length === 0) {
-        addNewTimer();
+    function rebuildTable() {
+      const table = document.getElementById("timersTable");
+      // إزالة الصفوف عدا العنوان
+      while (table.rows.length > 1) {
+        table.deleteRow(1);
       }
       timers.forEach((timer, index) => {
         addTimerRow(timer, index);
       });
 
-      const table = document.getElementById("timersTable");
+      // إضافة صف المجموع
       const totalRow = table.insertRow();
       for (let i = 0; i < 4; i++) {
         const emptyCell = totalRow.insertCell();
@@ -235,6 +245,7 @@
       });
     }
 
+    // تحميل البيانات وتهيئة الجدول عند فتح الصفحة
     loadTimersFromGitHub();
   </script>
 </body>
