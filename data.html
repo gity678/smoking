@@ -87,7 +87,8 @@
   let currentInterval = null;
   let currentStartTime = null;
 
-  function addRow(startTime, duration, stopTime, finalDuration, fromSupabase = false) {
+  // دالة لإضافة صف بيانات من Supabase (صف ثابت بدون أزرار)
+  function addDataRow(startTime, duration, stopTime, finalDuration) {
     const tbody = document.getElementById('dataBody');
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -98,15 +99,20 @@
       <td><button class="delete-btn">حذف</button></td>
     `;
     tbody.appendChild(tr);
+
     tr.querySelector('.delete-btn').onclick = () => {
       clearInterval(currentInterval);
       tr.remove();
     };
-    if (!fromSupabase) createNewTimerRow();
   }
 
-  function createNewTimerRow() {
+  // دالة لإنشاء صف زر تاريخ البداية واحد فقط
+  function createSingleStartRow() {
     const tbody = document.getElementById('dataBody');
+
+    // نتحقق إذا يوجد زر بالفعل، لا ننشئ أكثر من واحد
+    if (document.querySelector('.start-btn')) return;
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><button class="start-btn">تاريخ البداية</button><br><span class="start-time"></span></td>
@@ -153,31 +159,38 @@
         final_duration: finalDurationEl.textContent
       });
 
-      addRow(
+      // نضيف صف جديد للبيانات فقط (بدون أزرار)
+      addDataRow(
         startTimeEl.textContent,
         durationEl.textContent,
         stopTimeEl.textContent,
         finalDurationEl.textContent
       );
 
+      // نحذف صف زر البداية لأن المهمة انتهت
       tr.remove();
+
+      // نعيد إنشاء زر البداية الجديد (واحد فقط)
+      createSingleStartRow();
     };
 
     tr.querySelector('.delete-btn').onclick = () => {
       clearInterval(currentInterval);
       tr.remove();
+      // نعيد إنشاء زر البداية إذا لم يكن موجودًا
+      createSingleStartRow();
     };
   }
 
-  // تحميل البيانات ثم إضافة صف جديد
+  // تحميل وعرض البيانات ثم إضافة زر البداية مرة واحدة فقط
   window.onload = async () => {
     const data = await loadDataFromSupabase();
     if (data && data.length > 0) {
       data.forEach(row => {
-        addRow(row.start_time, row.duration, row.stop_time, row.final_duration, true);
+        addDataRow(row.start_time, row.duration, row.stop_time, row.final_duration);
       });
     }
-    createNewTimerRow();
+    createSingleStartRow();
   };
 </script>
 
