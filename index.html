@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <title>عدادات مترابطة مع Supabase</title>
+  <meta charset="UTF-8">
+  <title>عدادات مترابطة</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -42,11 +42,10 @@
     .delete-btn { background-color: #6c757d; color: #fff; }
     .delete-btn:hover { background-color: #5a6268; }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body>
 
-  <h2>سلسلة عدادات مترابطة مع Supabase</h2>
+  <h2>سلسلة عدادات مترابطة</h2>
   <table id="timersTable">
     <tr>
       <th>تاريخ اللحظة</th>
@@ -58,14 +57,12 @@
   </table>
 
   <script>
-    // بيانات Supabase: عدّل هنا برابطك ومفتاحك
-    const supabaseUrl = 'https://kqkuurzqkimpcfpfbipt.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtxa3V1cnpxa2ltcGNmcGZiaXB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MzMyNzEsImV4cCI6MjA2NjAwOTI3MX0.WgBqh1AyBGLjNzzYAy6zKtD1o7M2AwBQRQeTz7OArZ4';
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    let timers = JSON.parse(localStorage.getItem("timers")) || [];
 
-    const user_code = "m123t";
+    function saveTimers() {
+      localStorage.setItem("timers", JSON.stringify(timers));
+    }
 
-    // فورمات التاريخ
     function format(date) {
       const d = new Date(date);
       const yyyy = d.getFullYear();
@@ -77,10 +74,8 @@
       return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
     }
 
-    // حساب الفرق الزمني
     function diffTime(start, end = new Date()) {
       const diff = new Date(end) - new Date(start);
-      if (diff < 0) return "0 ثانية";
       const totalSec = Math.floor(diff / 1000);
       const d = Math.floor(totalSec / (24 * 3600));
       const h = Math.floor((totalSec % (24 * 3600)) / 3600);
@@ -89,177 +84,126 @@
       return `${d} يوم - ${h} ساعة - ${m} دقيقة - ${s} ثانية`;
     }
 
-    // جلب كل العدادات من Supabase
-    async function fetchTimers() {
-      const { data, error } = await supabase
-        .from('timers')
-        .select('*')
-        .eq('user_code', user_code)
-        .order('start_time', { ascending: true });
-      if (error) {
-        alert("خطأ في جلب البيانات: " + error.message);
-        return [];
-      }
-      return data;
+    function addNewTimer(startTime = null) {
+      const newTimer = {};
+      if (startTime) newTimer.start = startTime;
+      timers.push(newTimer);
+      saveTimers();
     }
 
-    // حذف عداد
-    async function deleteTimer(id) {
-      if (!confirm("هل تريد حذف هذا العداد؟")) return;
-      const { error } = await supabase
-        .from('timers')
-        .delete()
-        .eq('id', id);
-      if (error) {
-        alert("خطأ في الحذف: " + error.message);
-      } else {
-        loadAndRender();
-      }
-    }
-
-    // بدء عداد جديد مرتبط بوقت بداية محدد
-    async function addNewTimer(startTime = null) {
-      const { data, error } = await supabase
-        .from('timers')
-        .insert([
-          {
-            user_code,
-            title: 'عداد جديد',
-            start_time: startTime || new Date().toISOString(),
-            end_time: null,
-          }
-        ]);
-      if (error) {
-        alert("خطأ في الإضافة: " + error.message);
-      } else {
-        loadAndRender();
-      }
-    }
-
-    // تحديث وقت الكسر (end_time)
-    async function breakTimer(timer) {
-      if (timer.end_time) return; // تم الكسر مسبقًا
-      const { error } = await supabase
-        .from('timers')
-        .update({ end_time: new Date().toISOString() })
-        .eq('id', timer.id);
-      if (error) {
-        alert("خطأ في تحديث الكسر: " + error.message);
-      } else {
-        // إنشاء عداد جديد يبدأ من هذا الكسر
-        await addNewTimer(timer.end_time);
-      }
-    }
-
-    // بناء صفوف الجدول
-    function addTimerRow(timer) {
+    function addTimerRow(timer, index) {
       const table = document.getElementById("timersTable");
       const row = table.insertRow();
 
-      // تاريخ اللحظة
+      // 1. تاريخ اللحظة
       const cell1 = row.insertCell();
-      cell1.textContent = timer.start_time ? format(timer.start_time) : "";
-
-      // المدة المستمرة (تتحدث كل ثانية إذا لم يتم الكسر)
-      const cell2 = row.insertCell();
-      const spanDuration = document.createElement("span");
-      cell2.appendChild(spanDuration);
-
-      if (timer.start_time && !timer.end_time) {
-        spanDuration.textContent = diffTime(timer.start_time);
-        setInterval(() => {
-          spanDuration.textContent = diffTime(timer.start_time);
-        }, 1000);
-      } else if (timer.start_time && timer.end_time) {
-        spanDuration.textContent = diffTime(timer.start_time, timer.end_time);
+      if (timer.start) {
+        cell1.textContent = format(timer.start);
+      } else if (index === 0) {
+        const btn = document.createElement("button");
+        btn.textContent = "تاريخ اللحظة";
+        btn.className = "start-btn";
+        btn.onclick = () => {
+          timer.start = new Date().toISOString();
+          saveTimers();
+          location.reload();
+        };
+        cell1.appendChild(btn);
       } else {
-        spanDuration.textContent = "—";
+        // ينتظر تاريخ الكسر السابق ليبدأ تلقائياً
+        const previous = timers[index - 1];
+        if (previous?.break) {
+          timer.start = previous.break;
+          saveTimers();
+          location.reload();
+        } else {
+          cell1.textContent = "بانتظار الكسر السابق...";
+        }
       }
 
-      // زر الكسر
+      // 2. المدة المستمرة
+      const cell2 = row.insertCell();
+      if (timer.start && !timer.break) {
+        const span = document.createElement("span");
+        span.id = "live_" + index;
+        span.textContent = diffTime(timer.start);
+        cell2.appendChild(span);
+        setInterval(() => {
+          span.textContent = diffTime(timer.start);
+        }, 1000);
+      } else if (timer.break) {
+        cell2.textContent = diffTime(timer.start, timer.break);
+      } else {
+        cell2.textContent = "—";
+      }
+
+      // 3. زر الكسر
       const cell3 = row.insertCell();
-      if (timer.start_time && !timer.end_time) {
-        const btnBreak = document.createElement("button");
-        btnBreak.textContent = "تم الكسر";
-        btnBreak.className = "break-btn";
-        btnBreak.onclick = async () => {
-          await breakTimer(timer);
-          loadAndRender();
+      if (timer.start && !timer.break) {
+        const btn = document.createElement("button");
+        btn.textContent = "تم الكسر";
+        btn.className = "break-btn";
+        btn.onclick = () => {
+          timer.break = new Date().toISOString();
+          saveTimers();
+          addNewTimer(timer.break);
+          location.reload();
         };
-        cell3.appendChild(btnBreak);
-      } else if (timer.end_time) {
-        cell3.textContent = format(timer.end_time);
+        cell3.appendChild(btn);
+      } else if (timer.break) {
+        cell3.textContent = format(timer.break);
       } else {
         cell3.textContent = "—";
       }
 
-      // المدة النهائية
+      // 4. المدة النهائية
       const cell4 = row.insertCell();
-      if (timer.start_time && timer.end_time) {
-        cell4.textContent = diffTime(timer.start_time, timer.end_time);
+      if (timer.start && timer.break) {
+        cell4.textContent = diffTime(timer.start, timer.break);
       } else {
         cell4.textContent = "—";
       }
 
-      // حذف
+      // 5. زر الحذف
       const cell5 = row.insertCell();
       const delBtn = document.createElement("button");
       delBtn.textContent = "🗑 حذف";
       delBtn.className = "delete-btn";
-      delBtn.onclick = () => deleteTimer(timer.id);
+      delBtn.onclick = () => {
+        if (confirm("هل تريد الحذف؟")) {
+          timers.splice(index, 1);
+          saveTimers();
+          location.reload();
+        }
+      };
       cell5.appendChild(delBtn);
     }
 
-    // تحميل البيانات ورسم الجدول
-    async function loadAndRender() {
-      // حذف الصفوف القديمة (عدا رأس الجدول)
-      const table = document.getElementById("timersTable");
-      while (table.rows.length > 1) {
-        table.deleteRow(1);
-      }
-      const timers = await fetchTimers();
-
-      // إذا لا يوجد عدادات، نضيف واحد جديد بدون بداية محددة
-      if (timers.length === 0) {
-        await addNewTimer();
-        return;
-      }
-
-      // نتأكد من إضافة عداد جديد يبدأ بعد كسر العداد السابق
-      for (let i = 0; i < timers.length; i++) {
-        if (!timers[i].end_time) break; // لم يتم كسر هذا العداد بعد، لا نضيف جديد
-        if (i === timers.length -1) {
-          // العداد الأخير مكسور، نضيف عداد جديد يبدأ عند كسر الأخير
-          await addNewTimer(timers[i].end_time);
-        }
-      }
-
-      // عرض كل عداد في الجدول
-      for (const timer of timers) {
-        addTimerRow(timer);
-      }
-
-      // صف المجموع
-      const totalRow = table.insertRow();
-      for (let i = 0; i < 4; i++) {
-        const emptyCell = totalRow.insertCell();
-        emptyCell.style.border = "none";
-      }
-      const countCell = totalRow.insertCell();
-      countCell.style.fontWeight = "bold";
-      countCell.style.textAlign = "center";
-      countCell.style.backgroundColor = "#d4edda";
-      countCell.style.color = "#155724";
-      countCell.style.borderTop = "2px solid #28a745";
-      countCell.style.borderBottom = "2px solid #28a745";
-
-      const brokenCount = timers.filter(t => t.end_time !== null).length;
-      countCell.textContent = "المجموع: " + brokenCount;
+    if (timers.length === 0) {
+      addNewTimer(); // أول مرة فقط
     }
 
-    // تحميل الجدول عند فتح الصفحة
-    loadAndRender();
+    timers.forEach((timer, index) => {
+      addTimerRow(timer, index);
+    });
 
+    // ➕ خانة "المجموع" أسفل عمود الحذف فقط
+    const table = document.getElementById("timersTable");
+    const totalRow = table.insertRow();
+
+    for (let i = 0; i < 4; i++) {
+      const emptyCell = totalRow.insertCell();
+      emptyCell.style.border = "none";
+    }
+
+    const countCell = totalRow.insertCell();
+    countCell.style.fontWeight = "bold";
+    countCell.style.textAlign = "center";
+    countCell.style.backgroundColor = "#d4edda"; // أخضر فاتح
+    countCell.style.color = "#155724"; // أخضر غامق للنص
+    countCell.style.borderTop = "2px solid #28a745";
+    countCell.style.borderBottom = "2px solid #28a745";
+    countCell.textContent = "المجموع: " + timers.filter(t => t.break).length;
   </script>
 
 </body>
