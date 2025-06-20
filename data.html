@@ -25,18 +25,12 @@
       border: 1px solid #ccc;
       padding: 10px;
       text-align: center;
+      vertical-align: middle;
+      white-space: nowrap;
     }
     th {
       background-color: #007bff;
       color: white;
-    }
-    input[type="text"], input[type="date"], input[type="number"] {
-      width: 90%;
-      padding: 5px;
-      box-sizing: border-box;
-      text-align: center;
-      border: 1px solid #ccc;
-      border-radius: 3px;
     }
     button {
       background-color: #007bff;
@@ -46,6 +40,7 @@
       border-radius: 5px;
       cursor: pointer;
       transition: background-color 0.3s;
+      font-size: 14px;
     }
     button:hover {
       background-color: #0056b3;
@@ -81,49 +76,79 @@
     </tbody>
   </table>
 
-  <div class="add-row">
-    <input type="date" id="startDate" placeholder="تاريخ البدء" />
-    <input type="number" id="duration" placeholder="المدة المستمرة (بالثواني)" min="0" />
-    <input type="date" id="stopDate" placeholder="تاريخ التوقف" />
-    <input type="number" id="finalDuration" placeholder="المدة النهائية (بالثواني)" min="0" />
-    <button onclick="addRow()">إضافة صف</button>
+  <div class="add-row" style="margin-top:20px;">
+    <button onclick="addRow()">إضافة صف جديد</button>
   </div>
 
   <script>
+    // لتخزين عدادات المدة المستمرة لكل صف
+    const timers = new Map();
+
+    function formatDateTime(date) {
+      // صيغة عرض التاريخ والوقت: YYYY-MM-DD HH:MM:SS
+      return date.getFullYear() + '-' +
+        String(date.getMonth()+1).padStart(2,'0') + '-' +
+        String(date.getDate()).padStart(2,'0') + ' ' +
+        String(date.getHours()).padStart(2,'0') + ':' +
+        String(date.getMinutes()).padStart(2,'0') + ':' +
+        String(date.getSeconds()).padStart(2,'0');
+    }
+
     function addRow() {
-      const startDate = document.getElementById('startDate').value;
-      const duration = document.getElementById('duration').value;
-      const stopDate = document.getElementById('stopDate').value;
-      const finalDuration = document.getElementById('finalDuration').value;
-
-      if (!startDate || !duration || !stopDate || !finalDuration) {
-        alert('يرجى تعبئة جميع الحقول');
-        return;
-      }
-
       const tbody = document.getElementById('dataTable').querySelector('tbody');
       const tr = document.createElement('tr');
 
       tr.innerHTML = `
-        <td>${startDate}</td>
-        <td>${duration}</td>
-        <td>${stopDate}</td>
-        <td>${finalDuration}</td>
-        <td><button class="delete-btn" onclick="deleteRow(this)">حذف</button></td>
+        <td><button class="start-btn">تاريخ البداية</button><br><span class="start-time"></span></td>
+        <td><span class="duration">0</span></td>
+        <td><button class="stop-btn" disabled>تم الكسر</button><br><span class="stop-time"></span></td>
+        <td><span class="final-duration">0</span></td>
+        <td><button class="delete-btn">حذف</button></td>
       `;
 
       tbody.appendChild(tr);
 
-      // تفريغ الحقول بعد الإضافة
-      document.getElementById('startDate').value = '';
-      document.getElementById('duration').value = '';
-      document.getElementById('stopDate').value = '';
-      document.getElementById('finalDuration').value = '';
-    }
+      // إضافة أحداث للأزرار الجديدة
+      const startBtn = tr.querySelector('.start-btn');
+      const stopBtn = tr.querySelector('.stop-btn');
+      const deleteBtn = tr.querySelector('.delete-btn');
 
-    function deleteRow(btn) {
-      const row = btn.parentNode.parentNode;
-      row.parentNode.removeChild(row);
+      let intervalId = null;
+      let startTime = null;
+
+      startBtn.addEventListener('click', () => {
+        if (startTime) return; // منع إعادة الضغط على بدء
+        startTime = new Date();
+        tr.querySelector('.start-time').textContent = formatDateTime(startTime);
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+
+        // بدء عداد المدة المستمرة
+        intervalId = setInterval(() => {
+          const now = new Date();
+          const secondsPassed = Math.floor((now - startTime) / 1000);
+          tr.querySelector('.duration').textContent = secondsPassed;
+        }, 1000);
+      });
+
+      stopBtn.addEventListener('click', () => {
+        if (!startTime) return; // إذا لم يبدأ العد، تجاهل
+        const stopTime = new Date();
+        tr.querySelector('.stop-time').textContent = formatDateTime(stopTime);
+        stopBtn.disabled = true;
+
+        // إيقاف عداد المدة المستمرة
+        clearInterval(intervalId);
+
+        // حساب المدة النهائية
+        const finalDuration = Math.floor((stopTime - startTime) / 1000);
+        tr.querySelector('.final-duration').textContent = finalDuration;
+      });
+
+      deleteBtn.addEventListener('click', () => {
+        clearInterval(intervalId); // تأكد من إيقاف أي عداد
+        tr.remove();
+      });
     }
   </script>
 
