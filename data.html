@@ -87,8 +87,7 @@
   let currentInterval = null;
   let currentStartTime = null;
 
-  // دالة لإضافة صف بيانات من Supabase (صف ثابت بدون أزرار)
-  function addDataRow(startTime, duration, stopTime, finalDuration) {
+  function addRow(startTime, duration, stopTime, finalDuration, fromSupabase = false) {
     const tbody = document.getElementById('dataBody');
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -99,20 +98,15 @@
       <td><button class="delete-btn">حذف</button></td>
     `;
     tbody.appendChild(tr);
-
     tr.querySelector('.delete-btn').onclick = () => {
       clearInterval(currentInterval);
       tr.remove();
     };
+    if (!fromSupabase) createNewTimerRow();
   }
 
-  // دالة لإنشاء صف زر تاريخ البداية واحد فقط
-  function createSingleStartRow() {
+  function createNewTimerRow() {
     const tbody = document.getElementById('dataBody');
-
-    // نتحقق إذا يوجد زر بالفعل، لا ننشئ أكثر من واحد
-    if (document.querySelector('.start-btn')) return;
-
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><button class="start-btn">تاريخ البداية</button><br><span class="start-time"></span></td>
@@ -159,38 +153,38 @@
         final_duration: finalDurationEl.textContent
       });
 
-      // نضيف صف جديد للبيانات فقط (بدون أزرار)
-      addDataRow(
+      addRow(
         startTimeEl.textContent,
         durationEl.textContent,
         stopTimeEl.textContent,
         finalDurationEl.textContent
       );
 
-      // نحذف صف زر البداية لأن المهمة انتهت
       tr.remove();
-
-      // نعيد إنشاء زر البداية الجديد (واحد فقط)
-      createSingleStartRow();
     };
 
     tr.querySelector('.delete-btn').onclick = () => {
       clearInterval(currentInterval);
       tr.remove();
-      // نعيد إنشاء زر البداية إذا لم يكن موجودًا
-      createSingleStartRow();
     };
   }
 
-  // تحميل وعرض البيانات ثم إضافة زر البداية مرة واحدة فقط
   window.onload = async () => {
     const data = await loadDataFromSupabase();
     if (data && data.length > 0) {
       data.forEach(row => {
-        addDataRow(row.start_time, row.duration, row.stop_time, row.final_duration);
+        addRow(row.start_time, row.duration, row.stop_time, row.final_duration, true);
       });
     }
-    createSingleStartRow();
+    createNewTimerRow();
+
+    supabase
+      .channel('realtime:timers')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'timers' }, payload => {
+        const row = payload.new;
+        addRow(row.start_time, row.duration, row.stop_time, row.final_duration, true);
+      })
+      .subscribe();
   };
 </script>
 
