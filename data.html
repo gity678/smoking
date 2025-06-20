@@ -42,18 +42,18 @@
       transition: background-color 0.3s;
       font-size: 14px;
     }
-    button:hover {
+    button:hover:not(:disabled) {
       background-color: #0056b3;
+    }
+    button:disabled {
+      background-color: #999;
+      cursor: not-allowed;
     }
     .delete-btn {
       background-color: #dc3545;
     }
     .delete-btn:hover {
       background-color: #a71d2a;
-    }
-    .add-row {
-      margin-top: 10px;
-      text-align: center;
     }
   </style>
 </head>
@@ -72,20 +72,13 @@
       </tr>
     </thead>
     <tbody>
-      <!-- الصفوف الجديدة ستضاف هنا -->
+      <!-- سيبدأ الصف الأول تلقائياً -->
     </tbody>
   </table>
 
-  <div class="add-row" style="margin-top:20px;">
-    <button onclick="addRow()">إضافة صف جديد</button>
-  </div>
-
   <script>
-    // لتخزين عدادات المدة المستمرة لكل صف
-    const timers = new Map();
-
+    // صيغة عرض التاريخ والوقت: YYYY-MM-DD HH:MM:SS
     function formatDateTime(date) {
-      // صيغة عرض التاريخ والوقت: YYYY-MM-DD HH:MM:SS
       return date.getFullYear() + '-' +
         String(date.getMonth()+1).padStart(2,'0') + '-' +
         String(date.getDate()).padStart(2,'0') + ' ' +
@@ -94,62 +87,96 @@
         String(date.getSeconds()).padStart(2,'0');
     }
 
-    function addRow() {
+    // تخزين عداد المدة لكل صف
+    let intervalId = null;
+    let startTime = null;
+
+    // إنشاء صف جديد
+    // مع خيار: هل هو الصف الأول (يحتوي زر بدء) أم صف لاحق (يحتوي نص فقط)
+    function createRow(isFirstRow = false, startDateText = '', duration = 0, stopDateText = '', finalDuration = 0) {
       const tbody = document.getElementById('dataTable').querySelector('tbody');
       const tr = document.createElement('tr');
 
-      tr.innerHTML = `
-        <td><button class="start-btn">تاريخ البداية</button><br><span class="start-time"></span></td>
-        <td><span class="duration">0</span></td>
-        <td><button class="stop-btn" disabled>تم الكسر</button><br><span class="stop-time"></span></td>
-        <td><span class="final-duration">0</span></td>
-        <td><button class="delete-btn">حذف</button></td>
-      `;
+      if (isFirstRow) {
+        // الصف الأول يحتوي زر "تاريخ البداية"
+        tr.innerHTML = `
+          <td><button class="start-btn">تاريخ البداية</button><br><span class="start-time">${startDateText}</span></td>
+          <td><span class="duration">${duration}</span></td>
+          <td><button class="stop-btn" disabled>تم الكسر</button><br><span class="stop-time">${stopDateText}</span></td>
+          <td><span class="final-duration">${finalDuration}</span></td>
+          <td><button class="delete-btn">حذف</button></td>
+        `;
 
-      tbody.appendChild(tr);
+        tbody.appendChild(tr);
 
-      // إضافة أحداث للأزرار الجديدة
-      const startBtn = tr.querySelector('.start-btn');
-      const stopBtn = tr.querySelector('.stop-btn');
-      const deleteBtn = tr.querySelector('.delete-btn');
+        const startBtn = tr.querySelector('.start-btn');
+        const stopBtn = tr.querySelector('.stop-btn');
+        const deleteBtn = tr.querySelector('.delete-btn');
 
-      let intervalId = null;
-      let startTime = null;
+        startBtn.addEventListener('click', () => {
+          if (startTime) return; // لا نعيد البدء
+          startTime = new Date();
+          tr.querySelector('.start-time').textContent = formatDateTime(startTime);
+          startBtn.disabled = true;
+          stopBtn.disabled = false;
 
-      startBtn.addEventListener('click', () => {
-        if (startTime) return; // منع إعادة الضغط على بدء
-        startTime = new Date();
-        tr.querySelector('.start-time').textContent = formatDateTime(startTime);
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
+          // بدء عداد المدة المستمرة
+          intervalId = setInterval(() => {
+            const now = new Date();
+            const secondsPassed = Math.floor((now - startTime) / 1000);
+            tr.querySelector('.duration').textContent = secondsPassed;
+          }, 1000);
+        });
 
-        // بدء عداد المدة المستمرة
-        intervalId = setInterval(() => {
-          const now = new Date();
-          const secondsPassed = Math.floor((now - startTime) / 1000);
-          tr.querySelector('.duration').textContent = secondsPassed;
-        }, 1000);
-      });
+        stopBtn.addEventListener('click', () => {
+          if (!startTime) return;
+          const stopTime = new Date();
+          tr.querySelector('.stop-time').textContent = formatDateTime(stopTime);
+          stopBtn.disabled = true;
 
-      stopBtn.addEventListener('click', () => {
-        if (!startTime) return; // إذا لم يبدأ العد، تجاهل
-        const stopTime = new Date();
-        tr.querySelector('.stop-time').textContent = formatDateTime(stopTime);
-        stopBtn.disabled = true;
+          // إيقاف العداد
+          clearInterval(intervalId);
 
-        // إيقاف عداد المدة المستمرة
-        clearInterval(intervalId);
+          // حساب المدة النهائية
+          const finalDur = Math.floor((stopTime - startTime) / 1000);
+          tr.querySelector('.final-duration').textContent = finalDur;
 
-        // حساب المدة النهائية
-        const finalDuration = Math.floor((stopTime - startTime) / 1000);
-        tr.querySelector('.final-duration').textContent = finalDuration;
-      });
+          // إنشاء صف جديد (بدون زر بدء)
+          createRow(false);
+        });
 
-      deleteBtn.addEventListener('click', () => {
-        clearInterval(intervalId); // تأكد من إيقاف أي عداد
-        tr.remove();
-      });
+        deleteBtn.addEventListener('click', () => {
+          clearInterval(intervalId);
+          tr.remove();
+
+          // إذا حذفنا الصف الأول (زر البداية) ونصفه لم يبدأ، نعيد إنشاء صف أول جديد
+          if (isFirstRow) {
+            startTime = null;
+            intervalId = null;
+            createRow(true);
+          }
+        });
+
+      } else {
+        // صف لاحق بدون زر بدء، فقط عرض بيانات (في البداية فارغ)
+        tr.innerHTML = `
+          <td><span class="start-time">${startDateText}</span></td>
+          <td><span class="duration">${duration}</span></td>
+          <td><span class="stop-time">${stopDateText}</span></td>
+          <td><span class="final-duration">${finalDuration}</span></td>
+          <td><button class="delete-btn">حذف</button></td>
+        `;
+        tbody.appendChild(tr);
+
+        const deleteBtn = tr.querySelector('.delete-btn');
+        deleteBtn.addEventListener('click', () => {
+          tr.remove();
+        });
+      }
     }
+
+    // بدء التطبيق: إنشاء الصف الأول فقط
+    createRow(true);
   </script>
 
 </body>
