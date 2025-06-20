@@ -2,53 +2,265 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>عداد Supabase - مثال جاهز</title>
+  <title>عدادات مترابطة مع Supabase</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 30px;
+      background-color: #f5f5f5;
+      direction: rtl;
+    }
+    h2 {
+      color: #333;
+    }
+    table {
+      width: 95%;
+      margin: auto;
+      border-collapse: collapse;
+      background-color: #fff;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+    th {
+      background-color: #e9ecef;
+    }
+    button {
+      padding: 6px 15px;
+      border: none;
+      border-radius: 5px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .start-btn { background-color: #28a745; color: #fff; }
+    .start-btn:hover { background-color: #218838; }
+    .break-btn { background-color: #dc3545; color: #fff; }
+    .break-btn:hover { background-color: #c82333; }
+    .delete-btn { background-color: #6c757d; color: #fff; }
+    .delete-btn:hover { background-color: #5a6268; }
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
-<body style="font-family: Arial, sans-serif; text-align:center; padding:20px;">
-  <h1>عداد Supabase</h1>
-  <button onclick="startTimer()">تاريخ اللحظة (ابدأ)</button>
-  <button onclick="stopTimer()">تم الكسر (توقف)</button>
-  <div id="status" style="margin-top: 20px;"></div>
+<body>
+
+  <h2>سلسلة عدادات مترابطة مع Supabase</h2>
+  <table id="timersTable">
+    <tr>
+      <th>تاريخ اللحظة</th>
+      <th>المدة المستمرة</th>
+      <th>زر الكسر</th>
+      <th>المدة النهائية</th>
+      <th>حذف</th>
+    </tr>
+  </table>
 
   <script>
+    // بيانات Supabase: عدّل هنا برابطك ومفتاحك
     const supabaseUrl = 'https://kqkuurzqkimpcfpfbipt.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtxa3V1cnpxa2ltcGNmcGZiaXB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MzMyNzEsImV4cCI6MjA2NjAwOTI3MX0.WgBqh1AyBGLjNzzYAy6zKtD1o7M2AwBQRQeTz7OArZ4';
     const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
     const user_code = "m123t";
 
-    let startTime = null;
-
-    function startTimer() {
-      startTime = new Date();
-      document.getElementById('status').innerText = `بدأت عند: ${startTime.toLocaleString()}`;
+    // فورمات التاريخ
+    function format(date) {
+      const d = new Date(date);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      const ss = String(d.getSeconds()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
     }
 
-    async function stopTimer() {
-      if (!startTime) {
-        alert('يرجى الضغط على "تاريخ اللحظة" أولاً!');
-        return;
-      }
-      const endTime = new Date();
+    // حساب الفرق الزمني
+    function diffTime(start, end = new Date()) {
+      const diff = new Date(end) - new Date(start);
+      if (diff < 0) return "0 ثانية";
+      const totalSec = Math.floor(diff / 1000);
+      const d = Math.floor(totalSec / (24 * 3600));
+      const h = Math.floor((totalSec % (24 * 3600)) / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      return `${d} يوم - ${h} ساعة - ${m} دقيقة - ${s} ثانية`;
+    }
 
+    // جلب كل العدادات من Supabase
+    async function fetchTimers() {
+      const { data, error } = await supabase
+        .from('timers')
+        .select('*')
+        .eq('user_code', user_code)
+        .order('start_time', { ascending: true });
+      if (error) {
+        alert("خطأ في جلب البيانات: " + error.message);
+        return [];
+      }
+      return data;
+    }
+
+    // حذف عداد
+    async function deleteTimer(id) {
+      if (!confirm("هل تريد حذف هذا العداد؟")) return;
+      const { error } = await supabase
+        .from('timers')
+        .delete()
+        .eq('id', id);
+      if (error) {
+        alert("خطأ في الحذف: " + error.message);
+      } else {
+        loadAndRender();
+      }
+    }
+
+    // بدء عداد جديد مرتبط بوقت بداية محدد
+    async function addNewTimer(startTime = null) {
       const { data, error } = await supabase
         .from('timers')
         .insert([
           {
             user_code,
             title: 'عداد جديد',
-            start_time: startTime.toISOString(),
-            end_time: endTime.toISOString(),
-          },
+            start_time: startTime || new Date().toISOString(),
+            end_time: null,
+          }
         ]);
-
       if (error) {
-        document.getElementById('status').innerText = `حدث خطأ: ${error.message}`;
+        alert("خطأ في الإضافة: " + error.message);
       } else {
-        document.getElementById('status').innerText = `تم حفظ العداد!`;
+        loadAndRender();
       }
     }
+
+    // تحديث وقت الكسر (end_time)
+    async function breakTimer(timer) {
+      if (timer.end_time) return; // تم الكسر مسبقًا
+      const { error } = await supabase
+        .from('timers')
+        .update({ end_time: new Date().toISOString() })
+        .eq('id', timer.id);
+      if (error) {
+        alert("خطأ في تحديث الكسر: " + error.message);
+      } else {
+        // إنشاء عداد جديد يبدأ من هذا الكسر
+        await addNewTimer(timer.end_time);
+      }
+    }
+
+    // بناء صفوف الجدول
+    function addTimerRow(timer) {
+      const table = document.getElementById("timersTable");
+      const row = table.insertRow();
+
+      // تاريخ اللحظة
+      const cell1 = row.insertCell();
+      cell1.textContent = timer.start_time ? format(timer.start_time) : "";
+
+      // المدة المستمرة (تتحدث كل ثانية إذا لم يتم الكسر)
+      const cell2 = row.insertCell();
+      const spanDuration = document.createElement("span");
+      cell2.appendChild(spanDuration);
+
+      if (timer.start_time && !timer.end_time) {
+        spanDuration.textContent = diffTime(timer.start_time);
+        setInterval(() => {
+          spanDuration.textContent = diffTime(timer.start_time);
+        }, 1000);
+      } else if (timer.start_time && timer.end_time) {
+        spanDuration.textContent = diffTime(timer.start_time, timer.end_time);
+      } else {
+        spanDuration.textContent = "—";
+      }
+
+      // زر الكسر
+      const cell3 = row.insertCell();
+      if (timer.start_time && !timer.end_time) {
+        const btnBreak = document.createElement("button");
+        btnBreak.textContent = "تم الكسر";
+        btnBreak.className = "break-btn";
+        btnBreak.onclick = async () => {
+          await breakTimer(timer);
+          loadAndRender();
+        };
+        cell3.appendChild(btnBreak);
+      } else if (timer.end_time) {
+        cell3.textContent = format(timer.end_time);
+      } else {
+        cell3.textContent = "—";
+      }
+
+      // المدة النهائية
+      const cell4 = row.insertCell();
+      if (timer.start_time && timer.end_time) {
+        cell4.textContent = diffTime(timer.start_time, timer.end_time);
+      } else {
+        cell4.textContent = "—";
+      }
+
+      // حذف
+      const cell5 = row.insertCell();
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "🗑 حذف";
+      delBtn.className = "delete-btn";
+      delBtn.onclick = () => deleteTimer(timer.id);
+      cell5.appendChild(delBtn);
+    }
+
+    // تحميل البيانات ورسم الجدول
+    async function loadAndRender() {
+      // حذف الصفوف القديمة (عدا رأس الجدول)
+      const table = document.getElementById("timersTable");
+      while (table.rows.length > 1) {
+        table.deleteRow(1);
+      }
+      const timers = await fetchTimers();
+
+      // إذا لا يوجد عدادات، نضيف واحد جديد بدون بداية محددة
+      if (timers.length === 0) {
+        await addNewTimer();
+        return;
+      }
+
+      // نتأكد من إضافة عداد جديد يبدأ بعد كسر العداد السابق
+      for (let i = 0; i < timers.length; i++) {
+        if (!timers[i].end_time) break; // لم يتم كسر هذا العداد بعد، لا نضيف جديد
+        if (i === timers.length -1) {
+          // العداد الأخير مكسور، نضيف عداد جديد يبدأ عند كسر الأخير
+          await addNewTimer(timers[i].end_time);
+        }
+      }
+
+      // عرض كل عداد في الجدول
+      for (const timer of timers) {
+        addTimerRow(timer);
+      }
+
+      // صف المجموع
+      const totalRow = table.insertRow();
+      for (let i = 0; i < 4; i++) {
+        const emptyCell = totalRow.insertCell();
+        emptyCell.style.border = "none";
+      }
+      const countCell = totalRow.insertCell();
+      countCell.style.fontWeight = "bold";
+      countCell.style.textAlign = "center";
+      countCell.style.backgroundColor = "#d4edda";
+      countCell.style.color = "#155724";
+      countCell.style.borderTop = "2px solid #28a745";
+      countCell.style.borderBottom = "2px solid #28a745";
+
+      const brokenCount = timers.filter(t => t.end_time !== null).length;
+      countCell.textContent = "المجموع: " + brokenCount;
+    }
+
+    // تحميل الجدول عند فتح الصفحة
+    loadAndRender();
+
   </script>
+
 </body>
 </html>
