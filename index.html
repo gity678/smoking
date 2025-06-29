@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>تسجيل الدخول</title>
+</head>
+<body>
+  <h2>تسجيل الدخول</h2>
+  <form id="loginForm">
+    <input type="email" id="email" placeholder="البريد الإلكتروني" required><br><br>
+    <input type="password" id="password" placeholder="كلمة المرور" required><br><br>
+    <button type="submit">دخول</button>
+  </form>
+
+  <p id="responseMsg"></p>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const formData = new FormData();
+      formData.append("email", document.getElementById("email").value);
+      formData.append("password", document.getElementById("password").value);
+
+      fetch("https://yourname.epizy.com/login.php", {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("responseMsg").innerText = data.message;
+        if (data.status === "success") {
+          // توجيه للوحة تحكم مثلا
+          // window.location.href = "dashboard.html";
+        }
+      })
+      .catch(err => {
+        document.getElementById("responseMsg").innerText = "حدث خطأ في الاتصال";
+      });
+    });
+  </script>
+</body>
+</html>
