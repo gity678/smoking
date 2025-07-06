@@ -1,12 +1,13 @@
 {
-  "name": "image-link-extractor-puppeteer",
+  "name": "scrapingbee-image-extractor",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "puppeteer": "^21.3.8"
+    "axios": "^1.4.0",
+    "cheerio": "^1.0.0-rc.12",
+    "express": "^4.18.2"
   }
 }
