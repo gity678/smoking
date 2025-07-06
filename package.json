@@ -1,7 +1,6 @@
 {
   "name": "image-scraper",
   "version": "1.0.0",
-  "description": "Node.js Puppeteer image extractor",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
