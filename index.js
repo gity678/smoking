@@ -1,6 +1,5 @@
 const express = require('express');
-const axios = require('axios');
-const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,7 +8,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
   res.send(`
-    <h2>أدخل رابط صفحة الإنترنت لاستخراج روابط الصور</h2>
+    <h2>أدخل رابط صفحة الإنترنت لاستخراج روابط الصور (باستخدام Puppeteer)</h2>
     <form method="POST" action="/extract">
       <input type="url" name="url" placeholder="https://example.com" style="width:300px" required />
       <button type="submit">استخراج الصور</button>
@@ -21,23 +20,19 @@ app.post('/extract', async (req, res) => {
   const url = req.body.url;
   if (!url) return res.send('الرجاء إدخال رابط صحيح');
 
+  let browser;
   try {
-    const response = await axios.get(url);
-    const html = response.data;
-    const $ = cheerio.load(html);
-
-    const images = [];
-    $('img').each((i, el) => {
-      let src = $(el).attr('src');
-      if (src) {
-        if (!src.startsWith('http')) {
-          try {
-            src = new URL(src, url).href;
-          } catch {}
-        }
-        images.push(src);
-      }
+    browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
+    const page = await browser.newPage();
+
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+
+    // استخراج روابط الصور من الصفحة بعد تحميلها بالكامل
+    const images = await page.$$eval('img', imgs =>
+      imgs.map(img => img.src).filter(src => src)
+    );
 
     if (images.length === 0) {
       return res.send('لم يتم العثور على صور في الصفحة.');
@@ -52,6 +47,8 @@ app.post('/extract', async (req, res) => {
 
   } catch (error) {
     res.send('حدث خطأ أثناء جلب الصفحة: ' + error.message);
+  } finally {
+    if (browser) await browser.close();
   }
 });
 
