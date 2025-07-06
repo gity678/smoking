@@ -15,7 +15,7 @@ app.get('/', (req, res) => {
       <title>استخراج الصور من صفحة</title>
       <style>
         body { font-family: Arial; padding: 40px; text-align: center; background: #f0f0f0; }
-        input[type=text] { width: 80%; padding: 10px; font-size: 16px; margin: 20px 0; }
+        input[type=text] { width: 80%; padding: 10px; font-size: 16px; margin: 20px 0; border-radius: 5px; }
         input[type=submit] { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
       </style>
     </head>
@@ -56,10 +56,12 @@ app.post('/extract', async (req, res) => {
         <meta charset="UTF-8">
         <title>نتائج الصور</title>
         <style>
-          body { font-family: Arial; padding: 20px; background: #fff; }
-          .img-box { margin: 10px 0; }
-          img { max-width: 200px; display: block; margin-bottom: 5px; border: 1px solid #ccc; border-radius: 6px; }
-          a { color: #007bff; word-break: break-all; }
+          body { font-family: Arial; padding: 20px; background: #fff; text-align: center; }
+          .img-box { margin: 15px 0; }
+          img { max-width: 200px; border-radius: 6px; border: 1px solid #ccc; display: block; margin: 0 auto 10px; }
+          a { color: #007bff; text-decoration: none; word-break: break-all; }
+          a:hover { text-decoration: underline; }
+          hr { margin: 40px 0; }
         </style>
       </head>
       <body>
